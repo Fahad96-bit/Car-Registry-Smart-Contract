@@ -12,13 +12,14 @@ describe("CarRegistry", function () {
   describe("addCarDetail", () => {
     it("should add car against car number", async function () {
       await contract.deployed();
-      await contract.addCarDetail(
+      const tx = await contract.addCarDetail(
         "HB-11",
         account1.address,
         "toyota",
         "hilux",
         2021
       );
+      await tx.wait();
       const carDetail = await contract.getCarDetail("HB-11");
       const [address, make, model, year] = carDetail;
       expect(address).to.be.equal(account1.address);
@@ -50,13 +51,14 @@ describe("CarRegistry", function () {
   describe("getCarDetail", () => {
     it("should get car details against car number", async function () {
       await contract.deployed();
-      await contract.addCarDetail(
+      const tx = await contract.addCarDetail(
         "SS-999",
         account1.address,
         "suzuki",
         "aulto",
         2022
       );
+      await tx.wait();
       const carDetail = await contract.getCarDetail("SS-999");
       const [address, make, model, year] = carDetail;
       expect(address).to.be.equal(account1.address);
@@ -95,13 +97,14 @@ describe("CarRegistry", function () {
   describe("getCarOwner", () => {
     it("should get car owner against car number", async function () {
       await contract.deployed();
-      await contract.addCarDetail(
+      const tx = await contract.addCarDetail(
         "VV-999",
         account1.address,
         "suzuki",
         "picanto",
         2022
       );
+      await tx.wait();
       const carOwner = await contract.getCarOwner("VV-999");
       expect(carOwner).to.be.equal(account1.address);
     });
@@ -136,32 +139,29 @@ describe("CarRegistry", function () {
   describe("transferCarOwnership", () => {
     it("should transfer car ownership to another account", async function () {
       await contract.deployed();
-      await contract.addCarDetail(
+      const tx = await contract.addCarDetail(
         "VSS-999",
         account1.address,
         "toyota",
         "prius",
         2015
       );
-      await expect(contract.transferCarOwnership("VSS-999", account2.address))
+      await tx.wait();
+      const buyer = "0x824A552d9132e732EF59041F265eABCcB4cb11FA";
+      await expect(contract.transferCarOwnership("VSS-999", buyer))
         .to.emit(contract, "OwnershipTransferred")
-        .withArgs(account1.address, account2.address);
+        .withArgs(account1.address, buyer);
       const carOwner = await contract.getCarOwner("VSS-999");
-      expect(carOwner).to.be.equal(account2.address);
+      expect(carOwner).to.be.equal(buyer);
     });
 
     it("should not transfer car ownership to another account because only car owner can change ownership", async function () {
       await contract.deployed();
-      await contract.addCarDetail(
-        "VDS-89",
-        account2.address,
-        "suzuki",
-        "wagonr",
-        2015
-      );
+      const buyer = "0x824A552d9132e732EF59041F265eABCcB4cb11FA";
+      await contract.addCarDetail("VDS-89", buyer, "suzuki", "wagonr", 2015);
 
       await expect(
-        contract.transferCarOwnership("VDS-89", account3.address)
+        contract.transferCarOwnership("VDS-89", account1.address)
       ).to.be.revertedWith("You are not owner of a car");
     });
 
@@ -174,9 +174,10 @@ describe("CarRegistry", function () {
         "dzire",
         2015
       );
+      const buyer = "0x824A552d9132e732EF59041F265eABCcB4cb11FA";
 
       await expect(
-        contract.transferCarOwnership("FHD-99", account3.address)
+        contract.transferCarOwnership("FHD-99", buyer)
       ).to.be.revertedWith("Car does not exists with this car number");
     });
   });
